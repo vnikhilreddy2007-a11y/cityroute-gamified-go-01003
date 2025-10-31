@@ -15,7 +15,9 @@ const Navbar = () => {
 
   const scrollToSection = (id: string) => {
     const element = document.querySelector(id);
-    element?.scrollIntoView({ behavior: "smooth" });
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   return (
