@@ -42,7 +42,7 @@ const Navbar = () => {
             <button onClick={() => scrollToSection('#features')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
               Features
             </button>
-            <button onClick={() => scrollToSection('#gamification')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
+            <button onClick={() => navigate('/gamification')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
               Gamification
             </button>
             <button onClick={() => navigate('/pricing')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
