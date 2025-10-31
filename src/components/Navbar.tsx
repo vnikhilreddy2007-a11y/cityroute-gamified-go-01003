@@ -48,8 +48,8 @@ const Navbar = () => {
             <button onClick={() => navigate('/pricing')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
               Pricing
             </button>
-            <button onClick={() => scrollToSection('#cta')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
-              Download
+            <button onClick={() => navigate('/rewards')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
+              Rewards
             </button>
           </div>
           
