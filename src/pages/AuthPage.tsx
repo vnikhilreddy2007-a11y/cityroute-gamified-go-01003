@@ -1,216 +1,158 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Bus, Loader2 } from "lucide-react";
-import { z } from "zod";
-
-const emailSchema = z.string().email("Invalid email address");
-const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+import { Bus, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const AuthPage = () => {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        navigate("/");
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate("/rewards");
       }
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        navigate("/");
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/rewards");
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const validateInput = () => {
-    const emailResult = emailSchema.safeParse(email);
-    if (!emailResult.success) {
-      toast({
-        title: "Invalid Email",
-        description: emailResult.error.errors[0].message,
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    const passwordResult = passwordSchema.safeParse(password);
-    if (!passwordResult.success) {
-      toast({
-        title: "Invalid Password",
-        description: passwordResult.error.errors[0].message,
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSignUp = async () => {
-    if (!validateInput()) return;
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-      },
-    });
 
-    if (error) {
-      if (error.message.includes("already registered")) {
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
         toast({
-          title: "Account Exists",
-          description: "This email is already registered. Please sign in instead.",
-          variant: "destructive",
+          title: "Welcome back!",
+          description: "You've successfully logged in.",
         });
       } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/rewards`,
+          },
+        });
+
+        if (error) throw error;
+
         toast({
-          title: "Sign Up Failed",
-          description: error.message,
-          variant: "destructive",
+          title: "Account created!",
+          description: "Welcome to CityRoute!",
         });
       }
-    } else {
+    } catch (error: any) {
       toast({
-        title: "Success!",
-        description: "Account created successfully. You can now sign in.",
-      });
-    }
-    setLoading(false);
-  };
-
-  const handleSignIn = async () => {
-    if (!validateInput()) return;
-
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      toast({
-        title: "Sign In Failed",
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Bus className="h-6 w-6 text-primary-foreground" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-8">
+        <Link to="/" className="inline-block">
+          <Button variant="ghost">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Button>
+        </Link>
+
+        <Card>
+          <CardHeader className="space-y-4">
+            <div className="flex items-center justify-center gap-2">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <Bus className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                CityRoute
+              </span>
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              CityRoute
-            </span>
-          </div>
-          <CardTitle>Welcome</CardTitle>
-          <CardDescription>Sign in or create an account to start earning rewards</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signin" className="space-y-4">
+            <CardTitle className="text-center">
+              {isLogin ? "Welcome Back" : "Create Account"}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {isLogin
+                ? "Sign in to access your rewards"
+                : "Join CityRoute and start earning points"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
                 <Input
+                  id="email"
                   type="email"
-                  placeholder="Email"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
+                  required
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
                 <Input
+                  id="password"
                   type="password"
-                  placeholder="Password"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSignIn()}
-                  disabled={loading}
+                  required
+                  minLength={6}
                 />
               </div>
               <Button
-                className="w-full"
-                onClick={handleSignIn}
+                type="submit"
+                className="w-full bg-gradient-to-r from-primary to-accent hover:shadow-hover"
                 disabled={loading}
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
+                {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
               </Button>
-            </TabsContent>
-
-            <TabsContent value="signup" className="space-y-4">
-              <div className="space-y-2">
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Input
-                  type="password"
-                  placeholder="Password (min. 6 characters)"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSignUp()}
-                  disabled={loading}
-                />
-              </div>
-              <Button
-                className="w-full"
-                onClick={handleSignUp}
-                disabled={loading}
+            </form>
+            <div className="mt-4 text-center text-sm">
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-primary hover:underline"
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  "Create Account"
-                )}
-              </Button>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                {isLogin
+                  ? "Don't have an account? Sign up"
+                  : "Already have an account? Sign in"}
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
