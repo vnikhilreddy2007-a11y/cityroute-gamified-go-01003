@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Bus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -52,9 +53,12 @@ const Navbar = () => {
             </button>
           </div>
           
-          <Button className="bg-gradient-to-r from-primary to-accent hover:shadow-hover hover:scale-105 transition-all duration-300">
-            Download
-          </Button>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <Button className="bg-gradient-to-r from-primary to-accent hover:shadow-hover hover:scale-105 transition-all duration-300">
+              Download
+            </Button>
+          </div>
         </div>
       </div>
     </nav>
