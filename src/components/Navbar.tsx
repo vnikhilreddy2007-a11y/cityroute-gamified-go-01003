@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Bus } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,7 +44,7 @@ const Navbar = () => {
             <button onClick={() => scrollToSection('#gamification')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
               Gamification
             </button>
-            <button onClick={() => scrollToSection('#pricing')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
+            <button onClick={() => navigate('/pricing')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
               Pricing
             </button>
             <button onClick={() => scrollToSection('#cta')} className="text-sm font-medium hover:text-primary transition-colors hover:scale-110 duration-200">
