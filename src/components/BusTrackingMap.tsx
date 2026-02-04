@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -6,70 +6,11 @@ import { Bus, MapPin, Clock, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-// Fix for default marker icons in Leaflet with webpack/vite
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-});
-
-// Custom bus icon
-const createBusIcon = (color: string) => {
-  return L.divIcon({
-    className: "custom-bus-icon",
-    html: `
-      <div style="
-        background: ${color};
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 3px solid white;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        animation: pulse 2s infinite;
-      ">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 6v6"></path>
-          <path d="M15 6v6"></path>
-          <path d="M2 12h19.6"></path>
-          <path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"></path>
-          <circle cx="7" cy="18" r="2"></circle>
-          <path d="M9 18h5"></path>
-          <circle cx="16" cy="18" r="2"></circle>
-        </svg>
-      </div>
-    `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -18],
-  });
-};
-
-// Stop icon
-const stopIcon = L.divIcon({
-  className: "custom-stop-icon",
-  html: `
-    <div style="
-      background: hsl(var(--primary));
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    "></div>
-  `,
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-});
-
 // Chennai center coordinates
 const CHENNAI_CENTER: [number, number] = [13.0827, 80.2707];
 
 // Sample bus data for Chennai routes
-const buses = [
+const initialBuses = [
   {
     id: "M70",
     route: "M70",
@@ -148,12 +89,70 @@ const busStops = [
   { name: "Koyambedu CMBT", position: [13.0694, 80.1948] as [number, number] },
 ];
 
+// Custom bus icon creator
+const createBusIcon = (color: string) => {
+  return L.divIcon({
+    className: "custom-bus-icon",
+    html: `
+      <div style="
+        background: ${color};
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 6v6"></path>
+          <path d="M15 6v6"></path>
+          <path d="M2 12h19.6"></path>
+          <path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"></path>
+          <circle cx="7" cy="18" r="2"></circle>
+          <path d="M9 18h5"></path>
+          <circle cx="16" cy="18" r="2"></circle>
+        </svg>
+      </div>
+    `,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18],
+  });
+};
+
+// Stop icon
+const stopIcon = L.divIcon({
+  className: "custom-stop-icon",
+  html: `
+    <div style="
+      background: #22c55e;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    "></div>
+  `,
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+});
+
 const BusTrackingMap = () => {
   const [selectedBus, setSelectedBus] = useState<string | null>(null);
-  const [animatedBuses, setAnimatedBuses] = useState(buses);
+  const [animatedBuses, setAnimatedBuses] = useState(initialBuses);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure we only render map on client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Simulate bus movement
   useEffect(() => {
+    if (!isClient) return;
+    
     const interval = setInterval(() => {
       setAnimatedBuses((prev) =>
         prev.map((bus) => ({
@@ -167,7 +166,42 @@ const BusTrackingMap = () => {
     }, 3000);
 
     return () => clearInterval(interval);
+  }, [isClient]);
+
+  // Memoize bus icons
+  const busIcons = useMemo(() => {
+    const icons: Record<string, L.DivIcon> = {};
+    animatedBuses.forEach((bus) => {
+      if (!icons[bus.color]) {
+        icons[bus.color] = createBusIcon(bus.color);
+      }
+    });
+    return icons;
   }, []);
+
+  if (!isClient) {
+    return (
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <Badge variant="secondary" className="mb-4">
+              <MapPin className="w-3 h-3 mr-1" />
+              Live Tracking
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Track Buses in{" "}
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Real-Time
+              </span>
+            </h2>
+          </div>
+          <div className="h-[500px] bg-muted rounded-lg animate-pulse flex items-center justify-center">
+            <p className="text-muted-foreground">Loading map...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 bg-muted/30">
@@ -259,10 +293,12 @@ const BusTrackingMap = () => {
                   {/* Route line */}
                   <Polyline
                     positions={routePath}
-                    color="hsl(var(--primary))"
-                    weight={4}
-                    opacity={0.7}
-                    dashArray="10, 10"
+                    pathOptions={{
+                      color: "#22c55e",
+                      weight: 4,
+                      opacity: 0.7,
+                      dashArray: "10, 10",
+                    }}
                   />
 
                   {/* Bus stops */}
@@ -281,7 +317,7 @@ const BusTrackingMap = () => {
                     <Marker
                       key={bus.id}
                       position={bus.position}
-                      icon={createBusIcon(bus.color)}
+                      icon={busIcons[bus.color] || createBusIcon(bus.color)}
                     >
                       <Popup>
                         <div className="p-2 min-w-[200px]">
@@ -294,21 +330,21 @@ const BusTrackingMap = () => {
                             </div>
                             <div>
                               <p className="font-bold">{bus.destination}</p>
-                              <p className="text-xs text-gray-500">{bus.status}</p>
+                              <p className="text-xs text-muted-foreground">{bus.status}</p>
                             </div>
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-xs text-center mt-3">
-                            <div className="bg-gray-100 rounded p-2">
+                            <div className="bg-muted rounded p-2">
                               <p className="font-bold text-primary">{bus.eta}</p>
-                              <p className="text-gray-500">ETA</p>
+                              <p className="text-muted-foreground">ETA</p>
                             </div>
-                            <div className="bg-gray-100 rounded p-2">
+                            <div className="bg-muted rounded p-2">
                               <p className="font-bold text-primary">{bus.occupancy}%</p>
-                              <p className="text-gray-500">Full</p>
+                              <p className="text-muted-foreground">Full</p>
                             </div>
-                            <div className="bg-gray-100 rounded p-2">
+                            <div className="bg-muted rounded p-2">
                               <p className="font-bold text-primary">{bus.speed}</p>
-                              <p className="text-gray-500">km/h</p>
+                              <p className="text-muted-foreground">km/h</p>
                             </div>
                           </div>
                         </div>
@@ -320,7 +356,7 @@ const BusTrackingMap = () => {
                 {/* Map overlay info */}
                 <div className="absolute top-4 left-4 z-[1000] bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
                   <div className="flex items-center gap-2 text-sm">
-                    <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                    <div className="w-3 h-3 rounded-full bg-primary animate-pulse"></div>
                     <span className="font-medium">{animatedBuses.length} buses active</span>
                   </div>
                 </div>
@@ -331,6 +367,12 @@ const BusTrackingMap = () => {
       </div>
 
       <style>{`
+        .leaflet-container {
+          font-family: inherit;
+        }
+        .custom-bus-icon > div {
+          animation: pulse 2s infinite;
+        }
         @keyframes pulse {
           0%, 100% {
             transform: scale(1);
@@ -338,9 +380,6 @@ const BusTrackingMap = () => {
           50% {
             transform: scale(1.1);
           }
-        }
-        .leaflet-container {
-          font-family: inherit;
         }
       `}</style>
     </section>
