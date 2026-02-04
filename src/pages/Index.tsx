@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import BusTrackingMap from "@/components/BusTrackingMap";
 import Features from "@/components/Features";
 import Gamification from "@/components/Gamification";
 import Pricing from "@/components/Pricing";
@@ -13,7 +12,6 @@ const Index = () => {
       <Navbar />
       <main>
         <Hero />
-        <BusTrackingMap />
         <Features />
         <Gamification />
         <Pricing />

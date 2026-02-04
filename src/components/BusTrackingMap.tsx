@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Bus, MapPin, Clock, Users, Navigation } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +6,37 @@ import { Badge } from "@/components/ui/badge";
 // Chennai center coordinates
 const CHENNAI_CENTER = { lat: 13.0827, lng: 80.2707 };
 
-// Sample bus data for Chennai routes
-const initialBuses = [
+// Real Chennai bus stops with coordinates
+const chennaiBusStops = [
+  { id: "1", name: "CMBT", position: { lat: 13.0694, lng: 80.2002 } },
+  { id: "2", name: "Central", position: { lat: 13.0827, lng: 80.2707 } },
+  { id: "3", name: "Egmore", position: { lat: 13.0732, lng: 80.2609 } },
+  { id: "4", name: "T. Nagar", position: { lat: 13.0418, lng: 80.2341 } },
+  { id: "5", name: "Anna Nagar", position: { lat: 13.0850, lng: 80.2101 } },
+  { id: "6", name: "Adyar", position: { lat: 13.0063, lng: 80.2574 } },
+  { id: "7", name: "Velachery", position: { lat: 12.9815, lng: 80.2180 } },
+  { id: "8", name: "Guindy", position: { lat: 13.0067, lng: 80.2206 } },
+  { id: "9", name: "Vadapalani", position: { lat: 13.0520, lng: 80.2121 } },
+  { id: "10", name: "Broadway", position: { lat: 13.0903, lng: 80.2839 } },
+  { id: "11", name: "Mylapore", position: { lat: 13.0339, lng: 80.2676 } },
+  { id: "12", name: "Tambaram", position: { lat: 12.9249, lng: 80.1000 } },
+  { id: "13", name: "Perambur", position: { lat: 13.1167, lng: 80.2333 } },
+  { id: "14", name: "Royapettah", position: { lat: 13.0544, lng: 80.2627 } },
+  { id: "15", name: "Kodambakkam", position: { lat: 13.0521, lng: 80.2255 } },
+  { id: "16", name: "Saidapet", position: { lat: 13.0206, lng: 80.2230 } },
+  { id: "17", name: "Ashok Nagar", position: { lat: 13.0372, lng: 80.2119 } },
+  { id: "18", name: "Nungambakkam", position: { lat: 13.0569, lng: 80.2425 } },
+  { id: "19", name: "Kilpauk", position: { lat: 13.0800, lng: 80.2400 } },
+  { id: "20", name: "Porur", position: { lat: 13.0358, lng: 80.1564 } },
+  { id: "21", name: "Chromepet", position: { lat: 12.9516, lng: 80.1462 } },
+  { id: "22", name: "Pallavaram", position: { lat: 12.9675, lng: 80.1491 } },
+  { id: "23", name: "Washermenpet", position: { lat: 13.1167, lng: 80.2833 } },
+  { id: "24", name: "Triplicane", position: { lat: 13.0569, lng: 80.2775 } },
+  { id: "25", name: "Aminjikarai", position: { lat: 13.0700, lng: 80.2200 } },
+];
+
+// Static bus data for Chennai routes (no movement)
+const staticBuses = [
   {
     id: "M70",
     route: "M70",
@@ -65,31 +94,28 @@ const initialBuses = [
   },
 ];
 
-const BusTrackingMap = () => {
+interface BusTrackingMapProps {
+  fromLocation?: string;
+  toLocation?: string;
+}
+
+const BusTrackingMap = ({ fromLocation, toLocation }: BusTrackingMapProps) => {
   const [selectedBus, setSelectedBus] = useState<string | null>(null);
-  const [animatedBuses, setAnimatedBuses] = useState(initialBuses);
+  const [selectedStop, setSelectedStop] = useState<string | null>(null);
 
-  // Simulate bus movement
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAnimatedBuses((prev) =>
-        prev.map((bus) => ({
-          ...bus,
-          position: {
-            lat: bus.position.lat + (Math.random() - 0.5) * 0.002,
-            lng: bus.position.lng + (Math.random() - 0.5) * 0.002,
-          },
-        }))
-      );
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Create OpenStreetMap embed URL with markers
+  // Create OpenStreetMap embed URL
   const getMapUrl = () => {
-    const zoom = 12;
     return `https://www.openstreetmap.org/export/embed.html?bbox=${CHENNAI_CENTER.lng - 0.15},${CHENNAI_CENTER.lat - 0.08},${CHENNAI_CENTER.lng + 0.15},${CHENNAI_CENTER.lat + 0.08}&layer=mapnik&marker=${CHENNAI_CENTER.lat},${CHENNAI_CENTER.lng}`;
+  };
+
+  // Calculate position on map
+  const getMapPosition = (lat: number, lng: number) => {
+    const xPercent = ((lng - (CHENNAI_CENTER.lng - 0.15)) / 0.3) * 100;
+    const yPercent = ((CHENNAI_CENTER.lat + 0.08 - lat) / 0.16) * 100;
+    return {
+      left: `${Math.max(2, Math.min(98, xPercent))}%`,
+      top: `${Math.max(2, Math.min(98, yPercent))}%`,
+    };
   };
 
   return (
@@ -106,9 +132,16 @@ const BusTrackingMap = () => {
               Real-Time
             </span>
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            See where your bus is right now. Get accurate ETAs and live updates for all Chennai MTC buses.
-          </p>
+          {fromLocation && toLocation ? (
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Showing routes from <span className="font-semibold text-primary">{fromLocation}</span> to{" "}
+              <span className="font-semibold text-accent">{toLocation}</span>
+            </p>
+          ) : (
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              See where your bus is right now. Get accurate ETAs and live updates for all Chennai MTC buses.
+            </p>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-4 gap-6">
@@ -116,15 +149,18 @@ const BusTrackingMap = () => {
           <div className="lg:col-span-1 space-y-3 order-2 lg:order-1">
             <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
               <Bus className="w-5 h-5 text-primary" />
-              Nearby Buses
+              Available Buses
             </h3>
-            {animatedBuses.map((bus) => (
+            {staticBuses.map((bus) => (
               <Card
                 key={bus.id}
                 className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
                   selectedBus === bus.id ? "ring-2 ring-primary" : ""
                 }`}
-                onClick={() => setSelectedBus(bus.id)}
+                onClick={() => {
+                  setSelectedBus(bus.id);
+                  setSelectedStop(null);
+                }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -180,22 +216,54 @@ const BusTrackingMap = () => {
                     allowFullScreen
                   />
                   
-                  {/* Bus Markers Overlay */}
+                  {/* Bus Stop Markers */}
                   <div className="absolute inset-0 pointer-events-none">
-                    {animatedBuses.map((bus) => {
-                      // Calculate position relative to map bounds
-                      const xPercent = ((bus.position.lng - (CHENNAI_CENTER.lng - 0.15)) / 0.3) * 100;
-                      const yPercent = ((CHENNAI_CENTER.lat + 0.08 - bus.position.lat) / 0.16) * 100;
-                      
+                    {chennaiBusStops.map((stop) => {
+                      const pos = getMapPosition(stop.position.lat, stop.position.lng);
+                      return (
+                        <div
+                          key={stop.id}
+                          className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer group"
+                          style={pos}
+                          onClick={() => {
+                            setSelectedStop(stop.id);
+                            setSelectedBus(null);
+                          }}
+                        >
+                          <div
+                            className={`w-6 h-6 rounded-full flex items-center justify-center bg-primary/80 border-2 border-white shadow-md transition-transform hover:scale-110 ${
+                              selectedStop === stop.id ? "scale-125 ring-2 ring-primary ring-offset-2" : ""
+                            }`}
+                          >
+                            <Bus className="w-3 h-3 text-primary-foreground" />
+                          </div>
+                          {/* Stop name tooltip */}
+                          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-background rounded px-2 py-1 text-xs font-medium shadow-lg border opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-30">
+                            {stop.name}
+                          </div>
+                          {selectedStop === stop.id && (
+                            <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-background rounded-lg shadow-xl p-3 min-w-[140px] z-20 border">
+                              <p className="font-bold text-sm">{stop.name}</p>
+                              <p className="text-xs text-muted-foreground">Bus Stop</p>
+                              <p className="text-xs text-primary mt-1">Click to see routes</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Static Bus Markers */}
+                    {staticBuses.map((bus) => {
+                      const pos = getMapPosition(bus.position.lat, bus.position.lng);
                       return (
                         <div
                           key={bus.id}
-                          className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer transition-all duration-1000"
-                          style={{
-                            left: `${Math.max(5, Math.min(95, xPercent))}%`,
-                            top: `${Math.max(5, Math.min(95, yPercent))}%`,
+                          className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer"
+                          style={pos}
+                          onClick={() => {
+                            setSelectedBus(bus.id);
+                            setSelectedStop(null);
                           }}
-                          onClick={() => setSelectedBus(bus.id)}
                         >
                           <div
                             className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg border-2 border-white transition-transform ${
@@ -224,14 +292,18 @@ const BusTrackingMap = () => {
                 {/* Map overlay info */}
                 <div className="absolute top-4 left-4 z-10 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
                   <div className="flex items-center gap-2 text-sm">
-                    <div className="w-3 h-3 rounded-full bg-primary animate-pulse"></div>
-                    <span className="font-medium">{animatedBuses.length} buses active</span>
+                    <div className="w-3 h-3 rounded-full bg-primary"></div>
+                    <span className="font-medium">{staticBuses.length} buses • {chennaiBusStops.length} stops</span>
                   </div>
                 </div>
 
                 {/* Legend */}
                 <div className="absolute bottom-4 right-4 z-10 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
                   <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-primary/80"></div>
+                      <span>Bus Stop</span>
+                    </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-[#10B981]"></div>
                       <span>On Time</span>
