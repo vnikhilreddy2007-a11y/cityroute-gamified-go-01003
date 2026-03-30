@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getSafeErrorMessage } from "@/lib/error-messages";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -108,7 +109,7 @@ const RewardsPage = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getSafeErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -160,7 +161,7 @@ const RewardsPage = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: getSafeErrorMessage(error),
         variant: "destructive",
       });
     }
