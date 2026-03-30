@@ -1,1 +1,8 @@
 project_id = "suqsesapyewgrbdrmzve"
+
+[auth]
+enable_signup = true
+min_password_length = 8
+
+[auth.password]
+leaked_password_protection = "enabled"
