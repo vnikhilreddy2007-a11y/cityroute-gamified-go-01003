@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Bus } from "lucide-react";
+import { Bus, LogIn, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import ThemeToggle from "@/components/ThemeToggle";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,6 +17,21 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
 
   const scrollToSection = (id: string) => {
     const element = document.querySelector(id);
@@ -55,9 +72,17 @@ const Navbar = () => {
           
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Button className="bg-gradient-to-r from-primary to-accent hover:shadow-hover hover:scale-105 transition-all duration-300">
-              Download
-            </Button>
+            {user ? (
+              <Button onClick={handleLogout} variant="outline" className="gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            ) : (
+              <Button onClick={() => navigate('/auth')} className="bg-gradient-to-r from-primary to-accent hover:shadow-hover hover:scale-105 transition-all duration-300 gap-2">
+                <LogIn className="h-4 w-4" />
+                Login
+              </Button>
+            )}
           </div>
         </div>
       </div>
