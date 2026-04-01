@@ -78,10 +78,10 @@ const RewardsPage = () => {
         // Create initial points entry
         const { error: insertError } = await supabase
           .from("user_points")
-          .insert({ user_id: user.id, points: 500 }); // Start with 500 points for demo
+          .insert({ user_id: user.id, points: 5000 }); // Start with 5000 points for new users
 
         if (!insertError) {
-          setUserPoints(500);
+          setUserPoints(5000);
         }
       } else {
         setUserPoints(pointsData.points);
