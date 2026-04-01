@@ -71,7 +71,7 @@ const Gamification = () => {
     return { current: milestones[0], next: milestones[1] };
   };
 
-  const displayPoints = userPoints ?? 500; // Demo points for non-authenticated users
+  const displayPoints = userPoints ?? 5000; // Demo points for non-authenticated users
   const { current, next } = getCurrentMilestone(displayPoints);
   const progressToNext = next 
     ? ((displayPoints - current.points) / (next.points - current.points)) * 100 
